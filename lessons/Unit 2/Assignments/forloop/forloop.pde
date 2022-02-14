@@ -1,5 +1,5 @@
 void setup() {
-    size(800, 800);
+    size(1000, 600);
     imgSquare();
 }
 
