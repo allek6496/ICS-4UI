@@ -1,11 +1,11 @@
 void setup() {
-    size(800, 800);
-    imgSquare();
+    // size(1000, 600);
+    prices();
 }
 
 void imgSquare() {
     background(255);
-    
+
     PImage art = loadImage("waifus/artWaifu.png");    
     PImage eng = loadImage("waifus/engWaifu.png");    
     PImage env = loadImage("waifus/envWaifu.png");    
