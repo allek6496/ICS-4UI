@@ -17,6 +17,8 @@ class Particle {
     }
 
     void display() {
+        noStroke();
+
         // if negative, fill green
         if (charge < 0) fill(lerpColor(neg, nut, map(charge, minCharge, maxCharge, 0, 1)));
         // otherwise fill red

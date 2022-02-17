@@ -2,8 +2,8 @@
 
 ArrayList<Particle> particles = new ArrayList<Particle>();
 
-int startNum = 100;
-int clickAdd = 25;
+int startNum = 0;
+int clickAdd = 1;
 int radius = 3; // keep small -- no collision
 
 void setup() {
@@ -15,11 +15,19 @@ void setup() {
     for (int i = 0; i < startNum; i ++) {
         particles.add(new Particle(random(0, width), random(0, width), random(-10, 10)));
     }
+    
+    noLoop();
 }
 
 void draw() {
     background(200);
+    
+    fill(0);
     text(particles.size(), 0, 0);
+
+    BarnesHutt bh = new BarnesHutt(particles);
+
+    bh.display();
 
     // update particles
     for (Particle particle : particles) {
@@ -44,4 +52,6 @@ void mousePressed() {
             particles.add(new Particle(mouseX + r*cos(i*angle), mouseY + r*sin(i*angle), random(0, Particle.maxCharge)));
         }
     }
+
+    redraw();
 }
