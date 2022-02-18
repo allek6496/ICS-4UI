@@ -4,13 +4,10 @@ ArrayList<Particle> particles = new ArrayList<Particle>();
 
 int lastTime;
 int deltaT;
-IntList prevDeltas;
 
-int startNum = 100;
-int clickAdd = 100;
-int radius = 2; // keep small -- no collision
-
-boolean slow = false;
+int startNum = 1;
+int clickAdd = 1;
+int radius = 5; // keep small -- no collision
 
 void setup() {
     size(800, 800);
@@ -18,41 +15,25 @@ void setup() {
     textSize(25);
     textAlign(LEFT, TOP);
 
-    prevDeltas = new IntList();
-
     for (int i = 0; i < startNum; i ++) {
         particles.add(new Particle(random(0, width), random(0, width), random(-10, 10)));
     }
+    
+    //noLoop();
 }
 
 void draw() {
     deltaT = millis() - lastTime;
     lastTime = millis();
-    prevDeltas.append(deltaT);
 
     background(200);
-
-    fill(0);
-    String PARTICLES = " particles";
-    text(str(particles.size()) + PARTICLES, 0, 0);
     
-    if (prevDeltas.size() > 20) {
-        prevDeltas.remove(0);
-
-        int deltaSum = 0;
-        for (int delta : prevDeltas) deltaSum += delta;
-
-        text(str(round(1000/(deltaSum/prevDeltas.size()))) + " fps", 0, 25);
-    }
-
-    if (slow) {
-        deltaT /= 10;
-    }
+    fill(0);
+    text(particles.size(), 0, 0);
 
     BarnesHutt bh = new BarnesHutt(particles);
 
-    // toggle to show the grid lines (don't for many particles)
-    // bh.display();
+    bh.display();
 
     // update particles
     for (Particle particle : particles) {
@@ -77,18 +58,6 @@ void mousePressed() {
             particles.add(new Particle(mouseX + r*cos(i*angle), mouseY + r*sin(i*angle), random(0, Particle.maxCharge)));
         }
     }
-}
 
-void keyPressed() {    
-    if (key == ' ') {
-        slow = true;
-        frameRate(30);
-    }
-}
-
-void keyReleased() {
-    if (key == ' ') {
-        slow = false;
-        frameRate(60);
-    }
+    //redraw();
 }
