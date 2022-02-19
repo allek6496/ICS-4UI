@@ -3,11 +3,13 @@ class Particle {
     PVector vel;
 
     float maxSpeed = 0.5;
-    float dampening = 1; // (0, 1]. 1 is no dampening
+    float dampening = 0.95; // (0, 1]. 1 is no dampening
 
-    static final int minCharge = -10;
-    static final int maxCharge = 10;
+    // used inside and outside the class, static final is the best way I found to do that
+    static final int minCharge = -1;
+    static final int maxCharge = 1;
 
+    // color values to lerp between
     color pos = color(255, 80, 0);
     color nut = color(0, 0, 255);
     color neg = color(0, 255, 80);
@@ -15,22 +17,25 @@ class Particle {
     Particle(float x, float y, float charge) {
         this.x = x;
         this.y = y;
+
         vel = new PVector(0, 0);
 
+        // make sure the charge doesn't exceed bounds
         if (charge > maxCharge) this.charge = maxCharge;
         else if (charge < minCharge) this.charge = minCharge;
         else this.charge = charge;
     }
 
     void update(PVector force) {
+        // cap the force and dampen the velocity
         vel.add(force).limit(maxSpeed);
         vel.mult(dampening);
 
-        // compensate for the time
+        // compensate for the time elapsed, and allow for slow motion
         float newx = x + vel.x*deltaT;
         float newy = y + vel.y*deltaT;
 
-        // better wall bounces, stop it from skipping over (still breaks if it skipps over an entire multiple of width, unlikely)
+        // better wall bounces, stop it from skipping over (still breaks if it skipps over an entire multiple of width--very unlikely)
         if (newx < 0) {
             newx *= -1;
             vel.x *= -1;
