@@ -1,0 +1,5 @@
+Norway,5,2,10
+Germany,0,3,2
+Italy,10,12,30
+United States of AmErIcA,0,0,1
+Canada,100,200,300
