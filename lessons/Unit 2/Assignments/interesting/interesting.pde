@@ -7,8 +7,8 @@ IntList prevDeltas;
 ArrayList<Particle> particles;
 
 int startNum = 0;
-int clickAdd = 50;
-int radius = 2; // keep small -- no collision
+int clickAdd = 100;
+int radius = 3; // keep small -- no collision
 
 String clickAction = "CIRCLE"; // CIRCLE, GRID, RANDOM
 
