@@ -1,4 +1,4 @@
-int r = 500;
+int r = 250;
 
 int numBeams = 0;
 int dBeams = 1;
@@ -7,8 +7,8 @@ int maxBeams = 250;
 boolean looping = true;
 
 void setup() {
-    frameRate(10);
-    size(1200, 1200);
+    frameRate(60);
+    size(600, 600);
 }
 
 void draw() {
