@@ -26,7 +26,9 @@ int size = 200;            // number of squares to simulate (0, ~600]
 float terrainScale = 0.04; // how small the terrain features are
 
 float waterLevel = 0.3;     // at what point is water level [0, 1] with 0 being no water.
-float temperature = 0.1;    // the probability of a water tile making a cloud [0, 1];
+float temperature = 0.01;    // the probability of a water tile making a cloud [0, 1];
+
+float windChaos = 0.25;     // probability that the wind changes direction
 
 // COLORS
 color green = #5EF55B;
@@ -35,10 +37,20 @@ color blue = #1976d2;
 
 float[][] terrain;
 float w;
-ArrayList<Clouds> clouds;
+ArrayList<Cloud> clouds;
 
 // only 45 degree angles
-PVector wind;
+int wind;
+PVector[] directions = {
+    new PVector(0, 1),
+    new PVector(1, 1),
+    new PVector(1, 0),
+    new PVector(1, -1),
+    new PVector(0, -1),
+    new PVector(-1, -1),
+    new PVector(-1, 0),
+    new PVector(-1, 1)
+};
 
 void setup() {
     // configure the noise
@@ -51,28 +63,63 @@ void setup() {
     w = width/size;
 
     setupTerrain();
+    wind = int(random(directions.length));
 
-    clouds = new ArrayList<Clouds>();
+    clouds = new ArrayList<Cloud>();
 }
 
 void draw() {
-    wind = new PVector(round(random(1)), round(random(1)));
+    // change the wind directions
+    if (random(1) < windChaos) {
+        // randomly either add or subtract one from the wind direction, to create an adjacent angle
+        wind += round(random(1))*2 - 1; 
 
+        // don't let it overflow
+        if (wind == -1) wind = directions.length-1;
+        wind = wind%directions.length;
+    }
+
+    rectMode(CORNER);
     for (int x = 0; x < size; x++) {
         for (int y = 0; y < size; y++) {
-            // add the noise from to separate noise slices, first small scale second large scale
+            // color differently based off altitude (height) of terrain
             float altitude = terrain[x][y];
+
+            // if below the water level, make it blue, otherwise green though orange to represent height
             if (altitude <= waterLevel) fill(blue);
             else fill(lerpColor(green, orange, map(altitude, waterLevel, 1, 0, 1)));
+
+            // draw in the square
             square(x*w, y*w, w);
 
-            if (random(1) < temperature) {
-                float content = 0;
-                for (PVector d : )
+            // random chance to make a cloud
+            if (altitude <= waterLevel && random(1) < temperature) {
+                // find the approximate minimum distance to land by looping in each cardinal directions
+                int minDistance = size;
+                for (PVector d : directions) {
+                    PVector location = new PVector(x, y); 
+                    int distance = 0;
+                    try {
+                        while(terrain[int(location.x)][int(location.y)] <= waterLevel) {
+                            distance++;
+                            location.add(d);
+                        }
+                    } catch (IndexOutOfBoundsException e) {}
 
+                    if (distance < minDistance) minDistance = distance;
+                }
+
+                // TUNE: how big to make the clouds
+                float content = minDistance;
+                
                 clouds.add(new Cloud(x, y, content));
             }
         }
+    }
+
+    println(clouds.size());
+    for (int i = clouds.size()-1; i > 0; i--) {
+        clouds.get(i).update();
     }
 }
 

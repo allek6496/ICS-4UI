@@ -1,7 +1,7 @@
 int startX = 2;   // starting position of the origin on the screen
 int startY = 2; 
 int startFOV = 5; // number of squares to display horizontally
-int speed = 60;   // literally just framerate
+int speed = 10;   // literally just framerate
 
 Board board;
 int xPos, yPos, FOV;
