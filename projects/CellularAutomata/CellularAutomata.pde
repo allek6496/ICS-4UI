@@ -21,23 +21,27 @@ Water - object in global list. contains sediment and momentum, travel logic and 
 */
 
 // USER DEFINED
-int size = 200;            // number of squares to simulate (0, ~600]
+int size = 100;            // number of squares to simulate (0, ~600]
 
-float terrainScale = 0.04; // how small the terrain features are
+float terrainScale = 0.02; // how small the terrain features are
 
 float waterLevel = 0.3;     // at what point is water level [0, 1] with 0 being no water.
-float temperature = 0.01;    // the probability of a water tile making a cloud [0, 1];
+float temperature = 0.0002;    // the probability of a water tile making a cloud [0, 1];
 
-float windChaos = 0.25;     // probability that the wind changes direction
+float windChaos = 0.05;     // probability that the wind changes direction
 
 // COLORS
 color green = #5EF55B;
 color orange = #FF5722;
 color blue = #1976d2;
 
+float[][] originalTerrain;
 float[][] terrain;
 float w;
 ArrayList<Cloud> clouds;
+
+// size by n array containing all the droplets at a particular x value, for quicker collision searching
+ArrayList<ArrayList<Droplet>> droplets;
 
 // only 45 degree angles
 int wind;
@@ -56,16 +60,13 @@ void setup() {
     // configure the noise
     noiseDetail(3, 0.5);
 
-    size(800, 800);
-    frameRate(5);
+    size(1200, 1200);
+    frameRate(30);
     noStroke();
 
     w = width/size;
 
     setupTerrain();
-    wind = int(random(directions.length));
-
-    clouds = new ArrayList<Cloud>();
 }
 
 void draw() {
@@ -79,6 +80,7 @@ void draw() {
         wind = wind%directions.length;
     }
 
+    // draw all terrain squares
     rectMode(CORNER);
     for (int x = 0; x < size; x++) {
         for (int y = 0; y < size; y++) {
@@ -117,13 +119,39 @@ void draw() {
         }
     }
 
-    println(clouds.size());
-    for (int i = clouds.size()-1; i > 0; i--) {
+    // update all clouds first, backwords looping cause they can delete themselves
+    // this spawns droplets but won't draw the clouds yet
+    for (int i = clouds.size()-1; i >= 0; i--) {
         clouds.get(i).update();
+    }
+
+    int dropletCount = 0;
+    // update every droplet at every x value
+    for (int x = 0; x < size; x++) {
+        for (int i = droplets.get(x).size()-1; i >= 0; i--) {
+            Droplet droplet = droplets.get(x).get(i);
+            // if it hasn't already been updated, update it again
+            if (!droplet.updated) {
+                droplet.update();
+                dropletCount++;
+            }
+        }
+    }
+
+    // draw the clouds on top of everything
+    for (Cloud cloud : clouds) cloud.draw();
+
+    // reset the updated flag for next draw cycle
+    for (int x = 0; x < size; x++) {
+        for (int i = 0; i < droplets.get(x).size(); i++) {
+            droplets.get(x).get(i).updated = false;
+        }
     }
 }
 
 void setupTerrain() {
+    wind = int(random(directions.length));
+
     terrain = new float[size][size];
     noiseSeed(millis());
 
@@ -132,6 +160,16 @@ void setupTerrain() {
             // add the noise from to separate noise slices, first small scale second large scale
             terrain[x][y] = noise(x*terrainScale, y*terrainScale);
         }
+    }
+
+    // might not work
+    originalTerrain = terrain;
+
+    clouds = new ArrayList<Cloud>();
+    
+    droplets = new ArrayList<ArrayList<Droplet>>();
+    for (int i = 0; i < size; i++) {
+        droplets.add(new ArrayList<Droplet>());
     }
 }
 
