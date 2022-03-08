@@ -42,7 +42,7 @@ class Cloud {
         int newx = max(0, min(round(random(x-content/2, x+content/2)), size-1));
         int newy = max(0, min(round(random(y-content/2, y+content/2)), size-1));
 
-        droplets.get(newx).add(new Droplet(newx, newy, 1));
+        droplets.get(newx).add(new Droplet(newx, newy, 0.25));
 
         content--;
     }
@@ -84,8 +84,8 @@ class Droplet {
         // pick up material from the ground
         // https://www.desmos.com/calculator/sbrme4joy4
         float depth = originalTerrain[x][y] - altitude;
-        float material = 0.4*sqrt(momentum)/pow(depth + 1.5, 6);
-        float materialCapacity = sqrt(momentum) / 20;
+        float material = 0.075*sqrt(momentum)/pow(depth + 1.3, 4);
+        float materialCapacity = min(0.1, sqrt(momentum) / 10);
 
         // if it tries to pick up too much, pick up exactly maximum amount
         if (material + sediment > materialCapacity) {
@@ -109,24 +109,34 @@ class Droplet {
             // add a probability proportional to the square of the drop, make the lowest square most likely
             try {
                 float newAlt = terrain[int(x + d.x)][int(y+d.y)];
+                float newAlt2 = terrain[int(x + 2*d.x)][int(y + 2*d.y)];
                 
                 float altDiff = altitude - newAlt;
+                float altDiff2 = altitude - newAlt2;
 
+                /*
                 // if this is where the momentum is pushing the droplet, only downhill
                 // this could be cleaner but it works
                 if (d.heading() == direction.heading() && direction.mag() != 0) {
                     // TUNE: momentum effect
                     // https://www.desmos.com/calculator/ol5cjjdk7b
-                    probabilities[i] = 0.05/(1+1/momentum) + altDiff;
-
-                    // don't let it assign a negative probability
-                    if (probabilities[i] < 0) probabilities[i] = 0;
+                    probabilities[i] = 0.05/(-2*altDiff+1/momentum);
 
                     probSum += probabilities[i];
+                }*/
 
-                // otherwise if it's downhill
-                } else if (altDiff > 0) {
-                    probabilities[i] += altDiff;
+                // add probability proportional to how steep. slight uphill values can be balanced by steep downhill on the other side            
+                probabilities[i] += altDiff;
+
+
+                // lesser effect from two squares away, to smooth out the movement
+                probabilities[i] += altDiff2/1.5;
+
+                // don't let it assign a negative probability
+                if (probabilities[i] < 0) probabilities[i] = 0;
+                else {
+                    // square to reduce randomness
+                    probabilities[i] = pow(probabilities[i], 2);
                     probSum += probabilities[i];
                 }
             } catch (IndexOutOfBoundsException e) {}
@@ -158,13 +168,58 @@ class Droplet {
         x += direction.x;
         y += direction.y;
 
-
         // remove the droplet from the old x position
         droplets.get(oldx).remove(this);
 
+        // if it's OOB, just delete it 
+        if (x < 0 || size <= x || y < 0 || size <= y) return;
+
         // if it's hit water level, just remove the droplet
         if (terrain[x][y] <= waterLevel) {
-            terrain[x][y] += sediment;
+            
+            // if it's not moving or at a local minima
+            if (direction.mag() == 0) {
+                terrain[x][y] += sediment;
+
+            // find the first local minima and add the sediment to that point
+            } else {
+                PVector p = new PVector(x, y);
+
+                boolean done = false;
+                while (!done) {
+                    // keep track of the lowest of the neighbouring squares
+                    PVector minPoint = new PVector(p.x, p.y);
+                    float minHeight = terrain[int(p.x)][int(p.y)];
+
+                    for (PVector d : directions) {
+                        // get the square in this direction
+                        PVector newPoint = new PVector(p.x, p.y);
+                        newPoint.add(d);
+
+                        float newHeight = 1;
+                        try {
+                            newHeight = terrain[int(newPoint.x)][int(newPoint.y)];    
+                        } catch (IndexOutOfBoundsException e) {}
+                        
+                        if (newHeight < minHeight) {
+                            minPoint = newPoint;
+                            minHeight = newHeight; 
+                        }
+                    }
+
+                    // if the point hasn't changed, this is a local minima
+                    if (minPoint.x == p.x && minPoint.y == p.y) {
+                        done = true;
+                    } else {
+                        p = minPoint;
+                    }
+                }
+
+                // after the minima was found, add some of the sediment there
+                // while this does make it lossy, it balances the removal of lakes that are too small and the preservation of the larger lakes
+                terrain[int(p.x)][int(p.y)] += sediment/4;
+            } 
+
             return;
         }
 
@@ -191,24 +246,27 @@ class Droplet {
             return;
         }
 
-        // TUNE: momentum dampening
-        momentum -= 0.02;
+        // TUNE: momentum dampening and evaporation
+        momentum -= 0.05;
 
         // TUNE: raise momentum going downhill
-        momentum += (altitude - terrain[x][y])/5;
+        momentum += 5*(altitude - terrain[x][y]);
+
+        // if momentum has fallen to 0 remove the droplet
+        // TODO: deposit material on ground
+        if (momentum <= 0) {
+            terrain[x][y] += sediment;
+            return;
+        }
 
         // put material back down on the ground (similar to above, but not worth making into a function)
-        float newMaterialCapacity = sqrt(momentum) / 20;
+        float newMaterialCapacity = min(0.1, sqrt(momentum) / 10);
 
         // if it has too much, drop exactly to max amount
         if (sediment > newMaterialCapacity) {
             terrain[x][y] += sediment - newMaterialCapacity;
             sediment = newMaterialCapacity;
         }
-
-        // if momentum has fallen to 0 remove the droplet
-        // TODO: deposit material on ground
-        if (momentum <= 0) return;
 
         droplets.get(x).add(this);
         draw();
@@ -220,11 +278,11 @@ class Droplet {
         // i just like sigmoids, they're handy and robust
         float scaleMod = 1/(1+pow(2.71828, 1.5-momentum));
 
-        fill(sediment*10, sediment*10, 255/pow(sediment+1, 5));
+        fill(sediment*500, sediment*500, 255/(sediment*500));
         
         // if there is no matching direction draw circle
         if (direction.mag() == 0) {
-            circle(w*(x+0.5), w*(y+0.5), scaleMod*w);
+            circle(w*(x+0.5), w*(y+0.5), w*scaleMod*2);
 
         // otherwise draw a roughly teardrop shape
         } else {

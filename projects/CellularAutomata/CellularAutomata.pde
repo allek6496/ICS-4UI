@@ -21,12 +21,13 @@ Water - object in global list. contains sediment and momentum, travel logic and 
 */
 
 // USER DEFINED
-int size = 100;            // number of squares to simulate (0, ~600]
+int size = 200;            // number of squares to simulate (0, ~600]
+int speed = 60;
 
-float terrainScale = 0.02; // how small the terrain features are
+float terrainScale = 0.04; // how small the terrain features are
 
 float waterLevel = 0.3;     // at what point is water level [0, 1] with 0 being no water.
-float temperature = 0.0002;    // the probability of a water tile making a cloud [0, 1];
+float temperature = 0.001;    // the probability of a water tile making a cloud [0, 1];
 
 float windChaos = 0.05;     // probability that the wind changes direction
 
@@ -60,8 +61,8 @@ void setup() {
     // configure the noise
     noiseDetail(3, 0.5);
 
-    size(1200, 1200);
-    frameRate(30);
+    size(800, 800);
+    frameRate(speed);
     noStroke();
 
     w = width/size;
