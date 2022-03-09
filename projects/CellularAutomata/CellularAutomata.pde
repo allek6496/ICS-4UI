@@ -21,20 +21,22 @@ Water - object in global list. contains sediment and momentum, travel logic and 
 */
 
 // USER DEFINED
-int size = 200;            // number of squares to simulate (0, ~600]
-int speed = 60;
+int size = 50;            // number of squares to simulate (0, ~600]
+int speed = 10;
 
-float terrainScale = 0.04; // how small the terrain features are
+float terrainScale = 0.1; // how small the terrain features are {0.03}
 
-float waterLevel = 0.3;     // at what point is water level [0, 1] with 0 being no water.
-float temperature = 0.001;    // the probability of a water tile making a cloud [0, 1];
+float waterLevel = 0.35;     // at what point is water level [0, 1] with 0 being no water. {0.35}
+float temperature = 0.01;    // the probability of a water tile making a cloud [0, 1]; {0.001}
 
-float windChaos = 0.05;     // probability that the wind changes direction
+float windChaos = 0.05;     // probability that the wind changes direction {0.05}
 
 // COLORS
 color green = #5EF55B;
 color orange = #FF5722;
 color blue = #1976d2;
+color darkBlue = #202F8F;
+color brown = #646939;
 
 float[][] originalTerrain;
 float[][] terrain;
@@ -89,7 +91,7 @@ void draw() {
             float altitude = terrain[x][y];
 
             // if below the water level, make it blue, otherwise green though orange to represent height
-            if (altitude <= waterLevel) fill(blue);
+            if (altitude <= waterLevel) fill(lerpColor(darkBlue, blue, map(altitude, 0, waterLevel, 0, 1)));
             else fill(lerpColor(green, orange, map(altitude, waterLevel, 1, 0, 1)));
 
             // draw in the square
@@ -159,7 +161,7 @@ void setupTerrain() {
     for (int x = 0; x < size; x++) {
         for (int y = 0; y < size; y++) {
             // add the noise from to separate noise slices, first small scale second large scale
-            terrain[x][y] = noise(x*terrainScale, y*terrainScale);
+            terrain[x][y] = pow(noise(x*terrainScale, y*terrainScale), 0.8);
         }
     }
 

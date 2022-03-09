@@ -42,7 +42,7 @@ class Cloud {
         int newx = max(0, min(round(random(x-content/2, x+content/2)), size-1));
         int newy = max(0, min(round(random(y-content/2, y+content/2)), size-1));
 
-        droplets.get(newx).add(new Droplet(newx, newy, 0.25));
+        droplets.get(newx).add(new Droplet(newx, newy, 0.1));
 
         content--;
     }
@@ -64,6 +64,9 @@ class Droplet {
     // this is necessary because they move around within the update list, while updating
     boolean updated;
 
+    // don't let it pick up material when it spawns or sitting still
+    boolean moved;
+
     Droplet(int x, int y, float content) {
         this.x = x;
         this.y = y;
@@ -74,6 +77,7 @@ class Droplet {
         sediment = 0;
 
         updated = false;
+        moved = false;
     }
 
     void update() {
@@ -84,7 +88,7 @@ class Droplet {
         // pick up material from the ground
         // https://www.desmos.com/calculator/sbrme4joy4
         float depth = originalTerrain[x][y] - altitude;
-        float material = 0.075*sqrt(momentum)/pow(depth + 1.3, 4);
+        float material = 0.025*sqrt(momentum)/pow(depth + 1.3, 4);
         float materialCapacity = min(0.1, sqrt(momentum) / 10);
 
         // if it tries to pick up too much, pick up exactly maximum amount
@@ -93,8 +97,11 @@ class Droplet {
             material = max(materialCapacity - sediment, 0);
         }
 
-        sediment += material;
-        terrain[x][y] -= material;
+        // only pick up material if it's moved
+        if (moved) {
+            sediment += material;
+            terrain[x][y] -= material;
+        }
 
         // each number represents the probability of that index in the global array `directions` being chosen as the offset to the new position. this will be normalized to sum to 1
         float[] probabilities = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -144,6 +151,7 @@ class Droplet {
 
         if (probSum == 0) {
             direction = new PVector(0, 0);
+            moved = false;
         } else {
             for (int i = 0; i < probabilities.length; i++) {
                 probabilities[i] = probabilities[i]/probSum;
@@ -247,10 +255,10 @@ class Droplet {
         }
 
         // TUNE: momentum dampening and evaporation
-        momentum -= 0.05;
+        momentum -= 0.075;
 
         // TUNE: raise momentum going downhill
-        momentum += 5*(altitude - terrain[x][y]);
+        momentum += (altitude - terrain[x][y])/(terrainScale*2.5);
 
         // if momentum has fallen to 0 remove the droplet
         // TODO: deposit material on ground
@@ -269,6 +277,8 @@ class Droplet {
         }
 
         droplets.get(x).add(this);
+        moved = true;
+
         draw();
     }
 
@@ -278,8 +288,9 @@ class Droplet {
         // i just like sigmoids, they're handy and robust
         float scaleMod = 1/(1+pow(2.71828, 1.5-momentum));
 
-        fill(sediment*500, sediment*500, 255/(sediment*500));
-        
+        // sediment varies between 0 and 0.1, so this is faster than using map()
+        fill(lerpColor(blue, brown, sediment*10));
+
         // if there is no matching direction draw circle
         if (direction.mag() == 0) {
             circle(w*(x+0.5), w*(y+0.5), w*scaleMod*2);
