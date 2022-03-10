@@ -88,8 +88,8 @@ class Droplet {
         // pick up material from the ground
         // https://www.desmos.com/calculator/sbrme4joy4
         float depth = originalTerrain[x][y] - altitude;
-        float material = 0.025*sqrt(momentum)/pow(depth + 1.3, 4);
-        float materialCapacity = min(0.1, sqrt(momentum) / 10);
+        float material = 0.01*sqrt(momentum)/pow(depth + 1.3, 4);
+        float materialCapacity = min(0.2, sqrt(momentum) / 10);
 
         // if it tries to pick up too much, pick up exactly maximum amount
         if (material + sediment > materialCapacity) {
@@ -268,7 +268,7 @@ class Droplet {
         }
 
         // put material back down on the ground (similar to above, but not worth making into a function)
-        float newMaterialCapacity = min(0.1, sqrt(momentum) / 10);
+        float newMaterialCapacity = min(0.2, sqrt(momentum) / 10);
 
         // if it has too much, drop exactly to max amount
         if (sediment > newMaterialCapacity) {

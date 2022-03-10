@@ -21,13 +21,13 @@ Water - object in global list. contains sediment and momentum, travel logic and 
 */
 
 // USER DEFINED
-int size = 50;            // number of squares to simulate (0, ~600]
-int speed = 10;
+int size = 100;            // number of squares to simulate (0, ~600]
+int speed = 6;
 
-float terrainScale = 0.1; // how small the terrain features are {0.03}
+float terrainScale = 0.03; // how small the terrain features are {0.03}
 
 float waterLevel = 0.35;     // at what point is water level [0, 1] with 0 being no water. {0.35}
-float temperature = 0.01;    // the probability of a water tile making a cloud [0, 1]; {0.001}
+float temperature = 0.001;    // the probability of a water tile making a cloud [0, 1]; {0.001}
 
 float windChaos = 0.05;     // probability that the wind changes direction {0.05}
 
@@ -37,6 +37,12 @@ color orange = #FF5722;
 color blue = #1976d2;
 color darkBlue = #202F8F;
 color brown = #646939;
+
+// wind indicator arrow
+PImage arrow;
+
+// whether the wind is random or mouse-controlled
+boolean mouseControl;
 
 float[][] originalTerrain;
 float[][] terrain;
@@ -68,19 +74,34 @@ void setup() {
     noStroke();
 
     w = width/size;
+    mouseControl = false;
 
     setupTerrain();
+
+    arrow = loadImage("./arrow.png");
 }
 
 void draw() {
-    // change the wind directions
-    if (random(1) < windChaos) {
-        // randomly either add or subtract one from the wind direction, to create an adjacent angle
-        wind += round(random(1))*2 - 1; 
+    if (mouseControl) {
+        for (int i = 0; i < directions.length; i++) {
+            PVector mouseVector = new PVector(mouseX-width/2, mouseY-height/2);
 
-        // don't let it overflow
-        if (wind == -1) wind = directions.length-1;
-        wind = wind%directions.length;
+            // find the direction closest to the mouse's position from the screen center
+            if (PVector.angleBetween(mouseVector, directions[i]) < PI/8) {
+                wind = i;
+                break;
+            }
+        }
+    } else {
+        // change the wind directions randomly
+        if (random(1) < windChaos) {
+            // randomly either add or subtract one from the wind direction, to create an adjacent angle
+            wind += round(random(1))*2 - 1; 
+
+            // don't let it overflow
+            if (wind == -1) wind = directions.length-1;
+            wind = wind%directions.length;
+        }
     }
 
     // draw all terrain squares
@@ -150,8 +171,18 @@ void draw() {
             droplets.get(x).get(i).updated = false;
         }
     }
+
+    // draw the arrow to show wind direction
+    imageMode(CENTER);
+
+    pushMatrix();
+    translate(30, 30);
+    rotate(directions[wind].heading());
+    image(arrow, 0, 0, 60, 45);
+    popMatrix();
 }
 
+// initializes the terrain and resets droplet and cloud lists
 void setupTerrain() {
     wind = int(random(directions.length));
 
@@ -180,4 +211,9 @@ void keyPressed() {
     if (key == 'r') {
         setupTerrain();
     }
+}
+
+// when they click the mouse transfer mouse control
+void mousePressed() {
+    mouseControl = !mouseControl;
 }
