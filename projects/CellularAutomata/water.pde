@@ -90,12 +90,12 @@ class Droplet {
 
         float altitude = terrain[x][y];
 
-        // only pick up material if it's moved
+        // only pick up material if it has moved
         if (moved) {
             // pick up material from the ground
             // https://www.desmos.com/calculator/avri8fot0e
-            float depth = originalTerrain[x][y] - altitude;
-            float material = 0.01*sqrt(momentum)/pow(depth + 1.2, 4);
+            float depth = max(-0.1, originalTerrain[x][y] - altitude);
+            float material = 0.01*sqrt(momentum)/pow(depth + 1.3, terrainHardness);
 
             // maximum amount that it can hold
             float materialCapacity = sqrt(momentum) / 10;
@@ -122,7 +122,7 @@ class Droplet {
 
             // add a probability proportional to the square of the drop, make the lowest square most likely
             try {
-                float newAlt = terrain[int(x + d.x)][int(y+d.y)];
+                float newAlt = terrain[int(x + d.x)][int(y + d.y)];
                 float newAlt2 = terrain[int(x + 2*d.x)][int(y + 2*d.y)];
                 
                 float altDiff = altitude - newAlt;
@@ -131,8 +131,8 @@ class Droplet {
                 // add probability proportional to how steep. slight uphill values can be balanced by steep downhill on the other side            
                 probabilities[i] += altDiff;
 
-                // lesser effect from two squares away, to smooth out the movement
-                probabilities[i] += altDiff2/1.5;
+                // additional effect from two squares away, to smooth out the movement
+                // probabilities[i] += altDiff2;
 
                 // don't let it assign a negative probability
                 if (probabilities[i] < 0) probabilities[i] = 0;
@@ -164,7 +164,7 @@ class Droplet {
                 
                 if (rand <= 0) {
                     // greatly reduce momentum on sharp turns, to prevent oscillations
-                    if (PVector.angleBetween(direction, directions[i]) >= 3*PI/4) momentum /= 2;
+                    // if (PVector.angleBetween(direction, directions[i]) >= 3*PI/4) momentum /= 2;
 
                     direction = directions[i];
                     break;
@@ -184,8 +184,12 @@ class Droplet {
         // if it's hit water level, move the sediment to a local minima
         if (terrain[x][y] <= waterLevel) {
             
+            if (sediment > waterLevel - terrain[x][y]) {
+                sediment -= waterLevel - terrain[x][y];
+                terrain[x][y] = waterLevel;
+
             // if it's not moving or at a local minima (i.e. a one square water spot)
-            if (direction.mag() == 0) {
+            } else if (direction.mag() == 0) {
                 terrain[x][y] += sediment;
 
             // find the first local minima and add the sediment to that point
@@ -227,9 +231,8 @@ class Droplet {
                 // after the minima was found, add *some* of the sediment there
                 // while this does make it lossy, it balances the removal of lakes that are too small and the preservation of the larger lakes
                 terrain[int(p.x)][int(p.y)] += sediment/5;
+                return;
             } 
-
-            return;
         }
 
         // check if it's intersecting with another droplet
@@ -256,11 +259,12 @@ class Droplet {
         }
 
         // TUNE: momentum dampening and evaporation
-        momentum -= 0.2;
+        if (moved) momentum -= 0.2;
+        else momentum -= 0.75;
 
         // TUNE: raise momentum going downhill
         // varies with terrainScale so the shallower slopes of large areas don't make the droplets dry up too fast
-        momentum += (altitude - terrain[x][y])/(terrainScale*2.5);
+        momentum += (altitude - terrain[x][y])/(terrainScale);
 
         // if momentum has fallen to 0 remove the droplet
         // TODO: deposit material on ground
@@ -270,7 +274,6 @@ class Droplet {
         }
 
         // put material back down on the ground (must be the same above, but not worth making into a proper function)
-        // float newMaterialCapacity = min(0.2, sqrt(momentum) / 10);
         float newMaterialCapacity = sqrt(momentum)/10;
 
         // if it has too much, drop exactly to max amount
@@ -287,11 +290,11 @@ class Droplet {
 
     void draw() {
         // https://www.desmos.com/calculator/0rxocd2kcz
-        // modified sigmoid function, approaches no difference as content => +infinity
+        // modified sigmoid function, approaches no difference as momentum => +infinity
         // i just like sigmoids, they're handy and robust
         float scaleMod = 1/(1+pow(2.71828, 1.5-momentum));
 
-        // sediment varies between 0 and 0.1, so this is faster than using map()
+        // sediment roughly varies between 0 and 0.1, so this is faster than using map()
         fill(lerpColor(blue, brown, sediment*10));
 
         // if there is no matching direction draw circle
