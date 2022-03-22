@@ -1,16 +1,4 @@
 /*
-TODO:
-1. generate terrain
-2. generate clouds
-    2a. spawn clouds
-    2b. blow with wind
-3. clouds drop rain
-    3a. clouds have a capacity which decreases as rain falls
-    3b. clouds disappear when empty (possibly shrink as rainfall occurs)
-4. rain actions
-    4a. rain travels downhill with momentum
-    4b. rain picks up sediment
-
 Program Strcuture:
 Terrain - global 2d array of finite user-defined size
           values are floats from 0 to 100, with water-level settable
@@ -22,12 +10,12 @@ Water - object in global list. contains sediment and momentum, travel logic and 
 
 // USER DEFINED
 int size = 100;            // number of squares to simulate (0, ~600]
-int speed = 5;
+int speed = 20;
 
-float terrainScale = 0.03; // how small the terrain features are {0.03}
+float terrainScale = 0.05; // how small the terrain features are {0.03}
 
 float waterLevel = 0.35;     // at what point is water level [0, 1] with 0 being no water. {0.35}
-float temperature = 0.002;    // the probability of a water tile making a cloud [0, 1]; {0.001}
+float temperature = 0.001;    // the probability of a water tile making a cloud [0, 1]; {0.001}
 int terrainHardness = 4;  // the higher, the harder the terrain is
 
 float windChaos = 0.05;     // probability that the wind changes direction {0.05}

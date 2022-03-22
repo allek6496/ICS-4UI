@@ -36,7 +36,7 @@ class Cloud {
     void draw() {
         // draw the cloud
         rectMode(CENTER);
-        fill(255, 100);
+        fill(255, 40);
 
         // TUNE: size of cloud relative to content
         rect(x*w, y*w, w*content, w*content, w*sqrt(2));
@@ -132,7 +132,7 @@ class Droplet {
                 probabilities[i] += altDiff;
 
                 // additional effect from two squares away, to smooth out the movement
-                // probabilities[i] += altDiff2;
+                probabilities[i] += altDiff2;
 
                 // don't let it assign a negative probability
                 if (probabilities[i] < 0) probabilities[i] = 0;
@@ -164,7 +164,7 @@ class Droplet {
                 
                 if (rand <= 0) {
                     // greatly reduce momentum on sharp turns, to prevent oscillations
-                    // if (PVector.angleBetween(direction, directions[i]) >= 3*PI/4) momentum /= 2;
+                    if (PVector.angleBetween(direction, directions[i]) == PI) momentum /= 2;
 
                     direction = directions[i];
                     break;
@@ -183,49 +183,37 @@ class Droplet {
 
         // if it's hit water level, move the sediment to a local minima
         if (terrain[x][y] <= waterLevel) {
-            
-            if (sediment > waterLevel - terrain[x][y]) {
-                sediment -= waterLevel - terrain[x][y];
-                terrain[x][y] = waterLevel;
+            PVector p = new PVector(x, y);
 
-            // if it's not moving or at a local minima (i.e. a one square water spot)
-            } else if (direction.mag() == 0) {
-                terrain[x][y] += sediment;
+            boolean done = false;
+            while (!done) {
+                // keep track of the lowest of the neighbouring squares
+                PVector minPoint = new PVector(p.x, p.y);
+                float minHeight = terrain[int(p.x)][int(p.y)];
 
-            // find the first local minima and add the sediment to that point
-            } else {
-                PVector p = new PVector(x, y);
+                for (PVector d : directions) {
+                    // get the square in this direction
+                    PVector newPoint = new PVector(p.x, p.y);
+                    newPoint.add(d);
 
-                boolean done = false;
-                while (!done) {
-                    // keep track of the lowest of the neighbouring squares
-                    PVector minPoint = new PVector(p.x, p.y);
-                    float minHeight = terrain[int(p.x)][int(p.y)];
-
-                    for (PVector d : directions) {
-                        // get the square in this direction
-                        PVector newPoint = new PVector(p.x, p.y);
-                        newPoint.add(d);
-
-                        // find the height of the square in this direction
-                        float newHeight = 1;
-                        try {
-                            newHeight = terrain[int(newPoint.x)][int(newPoint.y)];    
-                        } catch (IndexOutOfBoundsException e) {}
-                        
-                        // if it's lower, update the new minimum variables
-                        if (newHeight < minHeight) {
-                            minPoint = newPoint;
-                            minHeight = newHeight; 
-                        }
+                    // find the height of the square in this direction
+                    float newHeight = 1;
+                    try {
+                        newHeight = terrain[int(newPoint.x)][int(newPoint.y)];    
+                    } catch (IndexOutOfBoundsException e) {}
+                    
+                    // if it's lower, update the new minimum variables
+                    if (newHeight < minHeight) {
+                        minPoint = newPoint;
+                        minHeight = newHeight; 
                     }
+                }
 
-                    // if the point hasn't changed, this is a local minima
-                    if (minPoint.x == p.x && minPoint.y == p.y) {
-                        done = true;
-                    } else {
-                        p = minPoint;
-                    }
+                // if the point hasn't changed, this is a local minima
+                if (minPoint.x == p.x && minPoint.y == p.y) {
+                    done = true;
+                } else {
+                    p = minPoint;
                 }
 
                 // after the minima was found, add *some* of the sediment there

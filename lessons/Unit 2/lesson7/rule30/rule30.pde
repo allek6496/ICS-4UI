@@ -1,35 +1,44 @@
+// idk i made some changes but it's still not perfect and im tired of this
+
+int steps = 11;
+
 boolean[] squares;
-int length = 100;
+int length;
 int w;
 int i;
 
+void settings() {
+    w = ceil(300.0/steps);
+
+    size(2*w*steps, w*steps);
+
+    println(w);
+}
+
 void setup() {
-    // normal setup
-    size(600, 600);
-    w = width/length;
-    i = 0;
+    squares = new boolean[steps*2];
 
-    squares = new boolean[length];
-
-    frameRate(2);
+    frameRate(ceil(steps/10.0));
     background(100);
 
+    if (w < 3) noStroke();
+
     // start conditions
-    squares[50] = true;
+    squares[steps] = true;
+    
+    // how many rows have been rendered
+    i = 0;
 }
 
 void draw() {
-    // don't keep looping if it won't be shown
-    if (i*w >= height) return;
+    // stop looping on last frame
+    if (i == steps-1) noLoop();
 
-    int y = w*i;
-    for (int j = 0; j < length; j++) {
-        int x = j*w;
-
+    for (int j = 0; j < steps*2; j++) {
         if (squares[j]) fill(255);
         else fill(0);
 
-        square(x, y, w);
+        square(w*j, w*i, w);
     }
 
     i++;
@@ -37,20 +46,10 @@ void draw() {
 }
 
 void updateSquares() {
-    boolean[] newVals = new boolean[length];
+    boolean[] newVals = new boolean[steps*2];
 
-    // positions -1 and length are always false and can't be changed
-    for (int i = 0; i < length; i++) {
-        boolean a, b, c;
-        if (i == 0) a = false;
-        else a = squares[i-1];
-
-        b = squares[i];
-
-        if (i == length-1) c = false;
-        else c = squares[i+1];
-
-        newVals[i] = rule(a, b, c);
+    for (int i = 1; i < steps*2-1; i++) {
+        newVals[i] = rule(squares[i-1], squares[i], squares[i+1]);
     }
 
     squares = newVals;
