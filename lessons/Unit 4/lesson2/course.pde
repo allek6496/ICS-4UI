@@ -1,46 +1,63 @@
 class Course {
     String code;
     String time;
-    HashMap<Student, int> students;
+    HashMap<Student, Integer> students;
     Teacher teacher;
 
     // never have any tests already
     int tests = 0;
 
-    Course(code, time, teacher) {
+    Course(String code, String time, Teacher teacher) {
         this.code = code;
         this.time = time;
         this.teacher = teacher;
-        this.students = new ArrayList<Student>();
+        this.students = new HashMap<Student, Integer>();
+        
+        teacher.addCourse(this);
+    }
+
+    // from https://stackoverflow.com/questions/46444855/checking-if-arraylist-contains-an-object-with-an-attribute
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof Course) {
+            Course p = (Course) o;
+            return this.code.equals(p.code);
+        } else {
+            return false;
+        }
     }
 
     void addStudent(Student s) {
-        students.put(s, 100);
-    }
+        if (students.containsKey(s)) return;
 
-    void addStudent(Student s, int mark) {
-        students.put(s, mark);
+        students.put(s, 100);
     }
 
     void displayStudents() {
         float average = 0;
 
-        println(code, "runs at", time)
-        for (Map.Entry<Student, int> s : students.entrySet()) {
-            
+        println(code, "runs at", time, "and the student list is:");
+        for (HashMap.Entry<Student, Integer> s : students.entrySet()) {
+            Student student = s.getKey();
+            println(student.name, "who has a mark of", this.getMark(student));
         }
+        println();
     }
 
     int getMark(Student s) {
         return students.get(s);
     }
 
-    // tests every student in the course, difficulty from 0 to 1 modifies the student's mark
+    // tests every student in the course, difficulty from 0 (impossible) to 1 (easy but not free) modifies the student's mark (numbers over 1 technically work but will give a lot of 100s)
     void test(float difficulty) {
-        for(Map.Entry<Student, int> s : students.entrySet()) {
+        if (difficulty < 0.8) println("Uh oh! Difficult test happening in", this.code);
+        else println("Easy test happening in", this.code);
+        println();
+
+        for(HashMap.Entry<Student, Integer> s : students.entrySet()) {
             Student student = s.getKey();
             int average = s.getValue();
-            int mark = student.test(difficulty);
+            int mark = student.doTest(difficulty);
 
             students.replace(student, (average*tests + mark)/(tests+1));
         }
