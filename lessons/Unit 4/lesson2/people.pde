@@ -5,7 +5,7 @@ class Teacher {
     
     // rating from -5 to 5
     float rating;
-    float ratings;
+    int ratings;
 
     Teacher(String name, int age) {
         this.name = name;
@@ -13,6 +13,10 @@ class Teacher {
         this.rating = 0;
         this.ratings = 0;
         this.courses = new ArrayList<Course>();
+    }
+
+    void status() {
+        return;
     }
 
     void displaySchedule() {
@@ -25,8 +29,11 @@ class Teacher {
     }
 
     void rate(float score) {
-        rating = (rating*ratings + min(max(-5, score), 5))/(ratings+1);
+        println(name, "was anonymously rated", score);
+        rating = round(10*(rating*ratings + min(max(-5, score), 5))/(ratings+1))/10.0;
         ratings++;
+        println("Their new rating is", rating, "from -5 to 5 after", ratings, "ratings.");
+        println();
     }
 
     void addCourse(Course c) {
@@ -129,12 +136,7 @@ class Student {
     }
 
     void addCourse(Course c) {
-        if (this.enrolled(c)) {
-            println("broke");
-            return;
-        }
-
-        c.addStudent(this);
+        if (this.enrolled(c)) return;
 
         if (courses.size() == 0) courses.add(c);
         else {
@@ -165,5 +167,6 @@ class Student {
 
             if (!added) courses.add(c);
         }
+        c.addStudent(this);
     }
 }

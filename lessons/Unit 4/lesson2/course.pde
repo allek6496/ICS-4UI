@@ -16,6 +16,7 @@ class Course {
         teacher.addCourse(this);
     }
 
+    /*
     // from https://stackoverflow.com/questions/46444855/checking-if-arraylist-contains-an-object-with-an-attribute
     @Override
     public boolean equals(Object o) {
@@ -25,12 +26,21 @@ class Course {
         } else {
             return false;
         }
+    }*/
+
+    // return true if a student of the same name and age is found
+    boolean hasStudent(Student student) {
+        for(Student s : students.keySet()) {
+            if (student.name == s.name && student.age == s.age) return true;
+        } return false;
     }
 
     void addStudent(Student s) {
-        if (students.containsKey(s)) return;
+        if (this.hasStudent(s)) return;
 
         students.put(s, 100);
+
+        s.addCourse(this);
     }
 
     void displayStudents() {

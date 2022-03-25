@@ -13,7 +13,7 @@ void setup() {
     Course data = new Course("MDF-4UI", "8:30", wilhelm);
     Course calculus = new Course("MCV-4UI", "1:00", wilhelm);
 
-    kegan.addCourse(cs);
+    cs.addStudent(kegan);
     emre.addCourse(cs);
     minseo.addCourse(cs);
     jeffrey.addCourse(cs);
@@ -31,6 +31,10 @@ void setup() {
     data.test(0.75);
     calculus.test(0.6);
     cs.test(1);
+
+    schattman.rate(4.7);
+    wilhelm.rate(1);
+    wilhelm.rate(-0.5);
 
     kegan.status();
     emre.status();
