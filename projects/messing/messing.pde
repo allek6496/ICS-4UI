@@ -1,16 +1,18 @@
 // testing code for the water droplets in CellularAutomata
 int num = 4;
 int w;
+float wind;
 
 void setup() {
   PVector test = new PVector(0, 0);
   println(test.heading());
 
   size(400, 400);
-  noLoop();
+  // noLoop();
   // background(100);
 
   w = width/num;
+  wind = 0;
 }
 
 void draw() {
@@ -27,7 +29,7 @@ void draw() {
   int x = 0;
   int y = 1;
   float content = 1;
-  float rotation = 0;
+  wind += random(-0.1, 0.1);
 
   fill(0, 0, 255);
   stroke(100, 100, 255);
@@ -38,7 +40,7 @@ void draw() {
   
   // https://www.desmos.com/calculator/0rxocd2kcz
   // modified sigmoid function, approaches no difference as content => +infinity
-  rotate(-1*rotation/8*TWO_PI);
+  rotate(-1*wind*PI/4 );
   scale(1/(1+pow(2.71828, 1.5-content)), 1);
 
   beginShape();
