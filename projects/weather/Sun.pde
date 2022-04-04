@@ -5,7 +5,7 @@ class Sun {
     PVector pivot;
 
     Sun() {
-        this(20);
+        this(30);
     }
 
     Sun(int size) {
@@ -18,8 +18,8 @@ class Sun {
     void update() {
         noStroke();
 
-        int xPos = int(skyPivot.x + radius*cos((time+day)*2*PI/255));
-        int yPos = int(skyPivot.y + radius*sin((time+day)*2*PI/255));
+        int xPos = int(skyPivot.x + radius*cos((time+day-dayNightFade)*2*PI/255));
+        int yPos = int(skyPivot.y + radius*sin((time+day-dayNightFade)*2*PI/255));
 
         if (yPos > height) {
             int steps = 2*width/size;
@@ -35,18 +35,25 @@ class Sun {
     }
 
     float warmth() {
-        // total amount of cloudcover present
-        float cloudVolume = 0;
-        for (Cloud cloud : clouds) {
-            cloudVolume += cloud.size;
-        }
+        float sunEffect = 10 - cloudCover();
 
-        float sunEffect = 10.0/(1+pow(2.71828, (cloudVolume/20.0)-5));
-        println(sunEffect);
+        // if it's night, make it cold 
+        if (time <= day - dayNightFade) {
+            return -1*sunEffect;
 
-        // if it's daytime, add warmth reduced by #clouds 
-        if (day < time && time < night) {
+        // fade the temperature in the morning
+        } else if (day - dayNightFade < time && time <= day + dayNightFade) {
+            return sunEffect * (2/(1+pow(2.71828, -7*(time-day)/dayNightFade)) - 1);
+        
+        // full effect during the day
+        } else if (day + dayNightFade < time && time <= night - dayNightFade) {
             return sunEffect;
+        
+        // fade the effect in the evening
+        } else if (night - dayNightFade < time && time <= night + dayNightFade) {
+            return sunEffect * (-2/(1+pow(2.71828, -7*(time-night)/dayNightFade)) + 1);
+        
+        // full negative effect in overnight
         } else {
             return -1*sunEffect;
         }

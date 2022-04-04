@@ -27,6 +27,10 @@ ArrayList<Cloud> clouds;
 // keeps the sky different each run, but the same every night
 int randomS = millis();
 
+// smooths out the sky clouding effect over several cycles
+int cloudSmoothness = 100; // how many frames to smooth over
+float[] cloudBuffer;
+
 void setup() {
     size(600, 600);
 
@@ -42,11 +46,12 @@ void setup() {
 
     sun = new Sun(20);
     clouds = new ArrayList<Cloud>();
+
+    cloudBuffer = new float[cloudSmoothness];
 }
 
 // quick disclaimer that the numbers and formulas are somewhat janky due to lots of tweaking. 
 void draw() {
-    println(map(3, 1, 3, 0, 1));
     time = (time+0.2) % 256;
 
     mouseAffect();
@@ -56,20 +61,24 @@ void draw() {
 
     // affected temperature for this draw cycle only
     float tempTemp = temp + sun.warmth();
+    println("temp", tempTemp);
 
     // make fog
     if (humidity > maxHumidity() && 0.1 < abs(wind) && abs(wind) < 0.8 && abs(time-day) < dayNightFade*2) {
     
     // make thundercloud
-    } else if (0 < tempTemp && tempTemp < 20 && wind == 1 && humidity >= maxHumidity()) {
-        if (random() < humidity/2 + 0.25) {
+    } else if (13 < tempTemp && tempTemp < 33 && abs(wind) == 1 && humidity >= maxHumidity()-0.1) {
+        if (random(0.005*pow(tempTemp - 24, 2)+0.3) < humidity/2 + 0.25) {
             float h = random(humidity, humidity*20);
             clouds.add(new Cloud(-1*(sign(wind)/2.0 - 0.5)*width, random(0.1, 0.25)*height, h, "thunder"));
+        
+            // don't drop the humidity as much to promote frequent cloud formation
+            humidity = max(0, humidity - h/30.0);
         }
     // chance to make a cloud
     } else if (height/4 < mouseY && wind != 0) {
         // probabilities vary proportional to humididty but inversely with temperature. this makes higher and lower temperatures make fewer clouds
-        if (random(map()) < humidity/3 + 0.05) {
+        if (random(1) < (float(mouseY)/height) - 0.25) {
             float h = random(humidity, humidity*20);
             clouds.add(new Cloud(-1*(sign(wind)/2.0 - 0.5)*width, random(0.33)*height, h, "rain"));
             
@@ -111,17 +120,20 @@ void drawSky() {
     
     popMatrix();
     
-    // fill transparent
-    fill(0, 0);
+    // fill transparent (almost transparent, for some reason alpha = 0 isn't working)
+    color sky = color(0, 0, 0, 1);
 
     // could do some really fancy function but this is easier to understand
     // smooths the color fade from day to night
-    if (day - dayNightFade < time && time < day + dayNightFade) fill(3, 169, 244, map(time, day-dayNightFade, day+dayNightFade, 0, 255));
-    if (night - dayNightFade < time && time < night + dayNightFade) fill(3, 169, 244, map(time, night-dayNightFade, night+dayNightFade, 255, 0));
+    if (day - dayNightFade < time && time < day + dayNightFade) sky = color(3, 169, 244, map(time, day-dayNightFade, day+dayNightFade, 0, 255));
+    if (night - dayNightFade < time && time < night + dayNightFade) sky = color(3, 169, 244, map(time, night-dayNightFade, night+dayNightFade, 255, 0));
     
     // if it's not fading just fill with sky
-    if (day + dayNightFade <= time && time <= night - dayNightFade) fill(3, 169, 244);
+    if (day + dayNightFade <= time && time <= night - dayNightFade) sky = color(3, 169, 244);
 
+    sky = greySky(sky);
+
+    fill(sky);
     rectMode(CORNER);
     rect(0, 0, width, height);
 
@@ -183,4 +195,35 @@ float sign(float num) {
     if (num == 0) return 0;
     
     return abs(num)/num;
+}
+
+// pass in a color, and it will return with a greyed out version of the color
+color greySky(color sky) {
+    float average = 0;
+    for (int i = cloudSmoothness - 2; i > 0; i--) {
+        average += cloudBuffer[i];
+        cloudBuffer[i] = cloudBuffer[i+1]; 
+    }
+
+    float currentCover = cloudCover();
+
+    average += currentCover;
+    cloudBuffer[cloudSmoothness - 1] = currentCover;
+    average /= cloudSmoothness;
+
+    return lerpColor(sky, color(80, 80, 80, 255), sqrt(average/10));
+}
+
+// value from 0 to 10 related to the current cloud cover
+float cloudCover() {
+    // total amount of cloudcover present
+    float cloudVolume = 0;
+    for (Cloud cloud : clouds) {
+        cloudVolume += cloud.size;
+
+        // thunderstorms are worth double
+        if (cloud.type == "thunder") cloudVolume += cloud.size;
+    }
+
+    return 10.0/(1+pow(2.71828, -1*((cloudVolume/20.0)-5)));
 }
