@@ -28,6 +28,13 @@ class Sun {
                 fill(255, 80, 0, 255*steps/i*pow(map(yPos, height+width, height, 0.3, 0), 2));
                 circle(xPos, yPos, size*i);
             }
+        } else {
+            int steps = width/size/2;
+
+            for (int i = 2; i <= steps; i++) {
+                fill(255, 230, 0, 255*steps/i*pow(map(max(height/2, yPos), height, height/2, 0, 0.2), 2));
+                circle(xPos, yPos, size*i/2);
+            }
         }
         
         fill(#ffeb3b);

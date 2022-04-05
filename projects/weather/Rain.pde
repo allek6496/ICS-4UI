@@ -4,6 +4,13 @@ class Rain {
     boolean snow;
     boolean frozen;
 
+    // always has magnitude 1, shows what direction it's currently travelling in by small air currents
+    // this isn't affected by wind and is random
+    PVector dir;
+
+    // used to make snow spin
+    float snowRotation;
+
     // parent cloud
     Cloud cloud;
 
@@ -12,8 +19,10 @@ class Rain {
         this.posY = posY;
         this.cloud = cloud;
 
+        dir = new PVector(0, 1);
+
         // if the temp < 0, make it snow
-        if (temp < 0) {
+        if (temp + sun.warmth() < 0) {
             this.snow = true;
 
             this.frozen = true;
@@ -21,29 +30,61 @@ class Rain {
     }
 
     void update() {
-        // freezes in the air
-        if (temp < 0 && !frozen) frozen = true;
+        noStroke();
+
+        float tempTemp = temp + sun.warmth();
+
+        // freezes in the air (this should probably use tempTemp, but it looks better using temp, because it freezes midair less often)
+        if (!frozen && temp < 0 && random(1) > 0.975) frozen = true;
 
         // if temp is high, melt the snow or frozen rain
-        if (temp > 5 && frozen) {
+        if (frozen && tempTemp > 0 && random(1) > 0.95) {
             snow = false;
             frozen = false;
         }
 
+        if (dir.heading() < PI*3/4) dir.rotate(random(-0.05, 0.1));
+        if (dir.heading() > PI*3/4) dir.rotate(random(-0.1, 0.05));
+
         // Move and draw the rain based on its state
         if (snow) {
-            posY += 1;
-            posX += wind*2;
+            // snow is extra chaotic, greater dir influence
+            posY += 3 + dir.y*3;
+            posX += wind*10 + dir.x*3;
 
-            // draw snow
+            stroke(255);
+            strokeWeight(2);
 
-        // freezing rain
+            pushMatrix();
+            
+            translate(posX, posY);
+            rotate(snowRotation);
+
+            // draw a small cross
+                            point(0, -1);   
+            point(-1, 0);   point(0, 0);    point(1, 0);
+                            point(0, 1);
+
+            popMatrix();
+
+            // turn it for next time
+            snowRotation = (snowRotation + 0.05) % TWO_PI;
+
+        // freezing rain/hail
         } else if (frozen) {
+            // not random and drops quickly, nasty stuff
+            posY += 15;
+            posX += wind;
+
+            rectMode(CENTER);
+
+            fill(100, 0, 255, 200);
+            square(posX, posY, 5);
 
         // rain
         } else {
-            posY += 10;
-            posX += wind*0.8 + random(-1*wind, wind);
+            posY += 10 + dir.y;
+            posX += wind*2 + dir.x;
 
             fill(0, 0, 255);
 
@@ -72,6 +113,6 @@ class Rain {
 
         }
 
-        if (height < posX) cloud.removeRain(this);
+        if (height < posY) cloud.removeRain(this);
     }
 }

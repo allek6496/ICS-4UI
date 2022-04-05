@@ -1,10 +1,17 @@
-// TODO: the sun sunset and sky fade timings are all janky
-// they work, but can't be changed. Make it all decided on where the sun is in the sky
+/**
+MOVE THE MOUSE TO CONTORL THE WEATHER
 
+UP-DOWN IS HUMIDITY
+LEFT-RIGHT IS WIND
+MOUSE WHEEL FOR TEMPERATURE
+ */
 
+// adjustable settings isn't in the rubric and many of these break stuff if changed, so just change the number of stars lol
 // settings:
-float delay = 5;
 int starCount = 1000;
+
+// don't adjust:
+float delay = 6;
 int dayNightFade = 10; // breaks if this becomes too large, depends on dayLength
 int dayLength = 128; // strictly less than 255
 
@@ -24,11 +31,13 @@ PVector skyPivot;
 Sun sun;
 ArrayList<Cloud> clouds;
 
+ArrayList<Firefly> fireflies;
+
 // keeps the sky different each run, but the same every night
 int randomS = millis();
 
 // smooths out the sky clouding effect over several cycles
-int cloudSmoothness = 100; // how many frames to smooth over
+int cloudSmoothness = 180; // how many frames to smooth over
 float[] cloudBuffer;
 
 void setup() {
@@ -46,6 +55,8 @@ void setup() {
 
     sun = new Sun(20);
     clouds = new ArrayList<Cloud>();
+    
+    fireflies = new ArrayList<Firefly>(); 
 
     cloudBuffer = new float[cloudSmoothness];
 }
@@ -59,31 +70,62 @@ void draw() {
 
     sun.update();
 
+    greySky();
+
+    // fireflies spawn all the time but leave if they're not happy (a.k.a. i can't be bothered to code spawn logic)
+    if (random(1) < 0.01) {
+        fireflies.add(new Firefly(random(1)*width, random(0.8, 1)*height));
+    }
+
+    for (int i = fireflies.size() - 1; i >= 0; i--) {
+        fireflies.get(i).update();
+    }
+
     // affected temperature for this draw cycle only
     float tempTemp = temp + sun.warmth();
-    println("temp", tempTemp);
 
-    // make fog
-    if (humidity > maxHumidity() && 0.1 < abs(wind) && abs(wind) < 0.8 && abs(time-day) < dayNightFade*2) {
-    
+    // oof giant if block incoming
+
+    // make fog when at max humidity and very little wind or cloud cover, also only during the morning lol
+    if (0 < tempTemp && tempTemp < 20 && abs(wind) < 0.25 && cloudCover() < 4 && abs(time-day) <= dayNightFade*2) {
+        // most likely at mouse 1/3 of the way down, and even so only 40% chance to be created
+        if (random(0.3) > abs(float(mouseY)/height - 0.3) && random(1) < 0.4) {
+            float h = random(5, 10);
+
+            // any x position (including slightly off the screen), and height in the bottom half
+            clouds.add(new Cloud(random(-0.25, 1.25)*width, random(0.5, 1)*height, h, "fog"));
+
+            // drop humidity very little so it recovers faster and makes fog again sooner
+            humidity = max(0, humidity - h/40);
+        }
+        
     // make thundercloud
-    } else if (13 < tempTemp && tempTemp < 33 && abs(wind) == 1 && humidity >= maxHumidity()-0.1) {
+    } else if (13 < tempTemp && tempTemp < 33 && abs(wind) == 1 && humidity >= maxHumidity()-0.15) {
+        // i don't even know lol
         if (random(0.005*pow(tempTemp - 24, 2)+0.3) < humidity/2 + 0.25) {
-            float h = random(humidity, humidity*20);
-            clouds.add(new Cloud(-1*(sign(wind)/2.0 - 0.5)*width, random(0.1, 0.25)*height, h, "thunder"));
+            float h = random(humidity*4, humidity*20);
+
+            // any x position and only in a narrow band near the top
+            clouds.add(new Cloud(random(-0.25, 1.25)*width, random(0.1, 0.25)*height, h, "thunder"));
         
             // don't drop the humidity as much to promote frequent cloud formation
             humidity = max(0, humidity - h/30.0);
         }
-    // chance to make a cloud
-    } else if (height/4 < mouseY && wind != 0) {
-        // probabilities vary proportional to humididty but inversely with temperature. this makes higher and lower temperatures make fewer clouds
-        if (random(1) < (float(mouseY)/height) - 0.25) {
-            float h = random(humidity, humidity*20);
-            clouds.add(new Cloud(-1*(sign(wind)/2.0 - 0.5)*width, random(0.33)*height, h, "rain"));
-            
-            // subtract this cloud's size from the current humidity, don't let it go negative
-            humidity = max(0, humidity - h/20.0);
+
+    // rain cloud, requires some wind to form and mouse must not be at the top (not enough humidity)
+    } else if (height/4 < mouseY && wind != 0 && humidity/maxHumidity() > 0.5) {
+        // probability of creation varies proportional to how high the mouse is
+        if (random(1) < (float(mouseY)/height)/1.5 - 0.2) {
+            // also proportional to how far from the center, wind can't be 0, but near 0 should have few clouds
+            if (random(1) < abs(wind)*2) {
+                float h = random(2, 10);
+
+                // any x position and anywhere in the top 1/3 of the screen
+                clouds.add(new Cloud(random(-0.25, 1.25)*width, random(0.33)*height, h, "rain"));
+                
+                // subtract this cloud's size from the current humidity, don't let it go negative
+                humidity = max(0, humidity - h/20.0);
+            }
         }
     }
 
@@ -96,6 +138,8 @@ void draw() {
     for (int i = clouds.size() - 1; i >= 0; i--) {
         clouds.get(i).update();
     }
+
+    thermometer();
 }
 
 // draws the sky with stars
@@ -106,9 +150,10 @@ void drawSky() {
     // draw the stars
     pushMatrix();
     translate(skyPivot.x, skyPivot.y);
-    rotate(time*TWO_PI/255);
+    rotate(time*TWO_PI/256);
 
     fill(255);
+    noStroke();
     randomSeed(randomS);
 
     // fill stars into a giant square with side lenght equal to twice the distance from the pivot to (0, 0)
@@ -131,14 +176,32 @@ void drawSky() {
     // if it's not fading just fill with sky
     if (day + dayNightFade <= time && time <= night - dayNightFade) sky = color(3, 169, 244);
 
-    sky = greySky(sky);
-
     fill(sky);
     rectMode(CORNER);
     rect(0, 0, width, height);
 
     // reset the random seed for use elsewhere
     randomSeed(millis()*10);
+}
+
+// greys over the sun and sky with a grey, but still below the clouds and rain
+void greySky() {
+    float average = 0;
+    for (int i = cloudSmoothness - 2; i > 0; i--) {
+        average += cloudBuffer[i];
+        cloudBuffer[i] = cloudBuffer[i+1]; 
+    }
+
+    float currentCover = cloudCover();
+
+    average += currentCover;
+    cloudBuffer[cloudSmoothness - 1] = currentCover;
+    average /= cloudSmoothness;
+
+    fill(lerpColor(color(0, 0, 0, 0), color(80, 80, 80, 180), sqrt(average/10)));
+
+    rectMode(CORNER);
+    rect(0, 0, width, height);
 }
 
 void mouseAffect() {
@@ -191,29 +254,6 @@ float maxHumidity() {
     return map(temp + sun.warmth(), -20, 50, 0.1, 1);
 }
 
-float sign(float num) {
-    if (num == 0) return 0;
-    
-    return abs(num)/num;
-}
-
-// pass in a color, and it will return with a greyed out version of the color
-color greySky(color sky) {
-    float average = 0;
-    for (int i = cloudSmoothness - 2; i > 0; i--) {
-        average += cloudBuffer[i];
-        cloudBuffer[i] = cloudBuffer[i+1]; 
-    }
-
-    float currentCover = cloudCover();
-
-    average += currentCover;
-    cloudBuffer[cloudSmoothness - 1] = currentCover;
-    average /= cloudSmoothness;
-
-    return lerpColor(sky, color(80, 80, 80, 255), sqrt(average/10));
-}
-
 // value from 0 to 10 related to the current cloud cover
 float cloudCover() {
     // total amount of cloudcover present
@@ -226,4 +266,37 @@ float cloudCover() {
     }
 
     return 10.0/(1+pow(2.71828, -1*((cloudVolume/20.0)-5)));
+}
+
+// draws a thermometer on the screen from middle left to bottom left
+void thermometer() {
+    // body outline
+    strokeWeight(15);
+    stroke(0);
+    line(15, height/2, 15, height-15);
+
+    // body
+    strokeWeight(14);
+    stroke(150);
+    line(15, height/2, 15, height-15);
+
+    // bulb outline
+    noStroke();
+    fill(0);
+    circle(15, height-15, 25);
+
+    // bulb
+    fill(255, 0, 0);
+    circle(15, height-15, 24);
+
+    // thermometer liquid
+    strokeWeight(14);
+    stroke(255, 0, 0);
+    line(15, height-15, 15, map(temp+sun.warmth(), -20, 50, height-15, height/2));
+
+    // 0 C indicator
+    strokeWeight(3);
+    stroke(0, 0, 255);
+    int y = height/2 + (height-15 - height/2)*5/7; // yes i could've coded this more nicely but it's 9:30 and i've been at this like 5 hours and i'm so tired lol
+    line(8, y, 22, y);
 }
