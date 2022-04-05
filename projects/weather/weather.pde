@@ -113,7 +113,7 @@ void draw() {
         }
 
     // rain cloud, requires some wind to form and mouse must not be at the top (not enough humidity)
-    } else if (height/4 < mouseY && wind != 0 && humidity/maxHumidity() > 0.5) {
+    } else if (height/4 < mouseY && wind != 0 && humidity/maxHumidity() > 0.2) {
         // probability of creation varies proportional to how high the mouse is
         if (random(1) < (float(mouseY)/height)/1.5 - 0.2) {
             // also proportional to how far from the center, wind can't be 0, but near 0 should have few clouds

@@ -17,7 +17,7 @@ class Firefly {
 
     void update() {
         // if there are clouds forming they run and hide
-        boolean areClouds = height/4 < mouseY || clouds.size() > 10;
+        boolean areClouds = height/2 < mouseY || clouds.size() > 10;
         
         // otherwise it's clear to move around
         if (!areClouds) {
