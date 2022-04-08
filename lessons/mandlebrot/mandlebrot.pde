@@ -37,7 +37,8 @@ void draw() {
         if ((resolution == 1 && zoom > 10000) || zoom > 100000) stroke(mandlebrotMedium(xPos, yPos));
         else stroke(mandlebrotFast(xPos, yPos));
 
-        point(xPos, yPos);
+        if (resolution == 1) point(xPos, yPos);
+        else circle(xPos, yPos, resolution);
 
         xPos += resolution;
         if (xPos >= width) {
