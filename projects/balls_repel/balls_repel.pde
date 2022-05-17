@@ -1,9 +1,9 @@
-int num = 500;
-int radius = 25;
+int num = 5000;
+int radius = 15;
 Particle balls[] = new Particle[num];
 
 void setup() { 
-  size(800, 800);
+  size(1600, 1600);
   noStroke();
   
   for (int i = 0; i < num; i++) {

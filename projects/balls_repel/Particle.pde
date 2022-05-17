@@ -1,5 +1,5 @@
 class Particle {
-  float charge = 30;
+  float charge = 10;
   float mouseCharge = 1000;
   float temp = 1;
   float x, y, velx, vely, accx, accy;

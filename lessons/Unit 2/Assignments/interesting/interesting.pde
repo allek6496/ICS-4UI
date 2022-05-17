@@ -7,15 +7,15 @@ IntList prevDeltas;
 ArrayList<Particle> particles;
 
 int startNum = 0;
-int clickAdd = 100;
-int radius = 3; // keep small -- no collision
+int clickAdd = 500;
+int radius = 10; // keep small -- no collision
 
 String clickAction = "CIRCLE"; // CIRCLE, GRID, RANDOM
 
 boolean slow = false;
 
 void setup() {
-    size(800, 800);
+    size(1600, 1600);
 
     textSize(25);
     textAlign(LEFT, TOP);
@@ -37,24 +37,20 @@ void draw() {
     lastTime = millis();
     prevDeltas.append(deltaT);
 
-    fill(0);
-    text(str(particles.size()) + " Particles", 0, 0);
+    // slow motion just reduces the speed of the particles, and not the speed of calculation
+    if (slow) {
+        deltaT /= 10;
+    }
 
+    int deltaSum = 0;
+    int fps = 0;
     // calculate 20 frame rolling average for smooth fps estimation
     if (prevDeltas.size() > 20) {
         prevDeltas.remove(0);
 
-        int deltaSum = 0;
         for (int delta : prevDeltas) deltaSum += delta;
 
-        text(str(round(1000/(deltaSum/prevDeltas.size()))) + " fps", 0, 25);
-    }
-
-    text("Press r to reset", 0, 50);
-    
-    // slow motion just reduces the speed of the particles, and not the speed of calculation
-    if (slow) {
-        deltaT /= 10;
+        fps = round(1000/(deltaSum/prevDeltas.size()));
     }
 
     // remake the tree on every frame (faster than looping through each particle for each particle)
@@ -78,6 +74,13 @@ void draw() {
 
         particleOrder.remove(r);
     }
+
+    fill(0);
+    text(str(particles.size()) + " Particles", 0, 0);
+
+    if(prevDeltas.size() == 20) text(str(fps) + " fps", 0, 25);
+
+    text("Press r to reset", 0, 50);
 }
 
 void mousePressed() {
