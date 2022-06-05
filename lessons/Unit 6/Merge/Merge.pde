@@ -26,7 +26,7 @@ int[] mergeSort(int[] a, int start, int end) {
         int second[] = mergeSort(a, mid+1, end);
         return merge(first, second);
     }
-}   
+}
 
 int[] merge( int[] a, int[] b ) {
   int[] c = new int[a.length + b.length]; //what size should c be?
